@@ -9,6 +9,8 @@ CREATE TABLE users (
   surname VARCHAR(100) NOT NULL,
   cell_number VARCHAR(30) NOT NULL,
   role ENUM('parent', 'coach') NOT NULL DEFAULT 'parent',
+  reset_token_hash VARCHAR(64) NULL,
+  reset_token_expires DATETIME NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

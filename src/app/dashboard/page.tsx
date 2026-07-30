@@ -32,25 +32,18 @@ export default function DashboardPage() {
 
   async function loadChildren() {
     setLoading(true);
-    try {
-      const res = await fetch("/api/children");
-      if (res.ok) {
-        const data = await res.json();
-        setChildren(data.children);
-      }
-    } finally {
-      setLoading(false);
+    const res = await fetch("/api/children");
+    if (res.ok) {
+      const data = await res.json();
+      setChildren(data.children);
     }
+    setLoading(false);
   }
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void loadChildren();
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
+    (async () => {
+      await loadChildren();
+    })();
   }, []);
 
   async function handleAddChild(e: React.FormEvent) {
@@ -81,8 +74,8 @@ export default function DashboardPage() {
       <div className="topbar">
         <span className="brand display">Team Sheet</span>
         <div style={{ display: "flex", gap: "1rem" }}>
-          <Link href="/stats" className="muted">Stats</Link>
-          <Link href="/availability" className="muted">Set availability &rarr;</Link>
+          <link href="/stats" className="muted">Stats</link>
+          <link href="/availability" className="muted">Set availability &rarr;</link>
         </div>
       </div>
 
@@ -117,7 +110,7 @@ export default function DashboardPage() {
               id="child_name"
               required
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, position_1: e.target.value as Position }))}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
           </div>
 

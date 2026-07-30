@@ -75,6 +75,9 @@ export default function CoachLoginPage() {
         </form>
 
         <p className="muted" style={{ textAlign: "center", marginTop: "1.25rem" }}>
+          <Link href="/forgot-password" style={{ color: "var(--gold)" }}>Forgot password?</Link>
+        </p>
+        <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>
           Coach accounts are set up by the club admin, not self-signup.
         </p>
         <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>

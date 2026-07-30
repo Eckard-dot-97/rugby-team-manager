@@ -78,13 +78,21 @@ export default function CoachDashboard() {
   }
 
   useEffect(() => {
-    loadFixtures();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    async function initFixtures() {
+      await loadFixtures();
+    }
+
+    void initFixtures();
   }, []);
 
   useEffect(() => {
-    if (fixtureId) loadRoster(fixtureId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!fixtureId) return;
+
+    async function initRoster() {
+      await loadRoster(fixtureId);
+    }
+
+    void initRoster();
   }, [fixtureId]);
 
   async function handleCreateFixture(e: React.FormEvent) {

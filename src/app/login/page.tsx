@@ -75,6 +75,9 @@ export default function LoginPage() {
         </form>
 
         <p className="muted" style={{ textAlign: "center", marginTop: "1.25rem" }}>
+          <Link href="/forgot-password" style={{ color: "var(--gold)" }}>Forgot password?</Link>
+        </p>
+        <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>
           Need an account? <Link href="/signup" style={{ color: "var(--gold)" }}>Sign up</Link>
         </p>
         <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>

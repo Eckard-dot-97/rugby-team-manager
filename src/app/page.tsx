@@ -13,7 +13,7 @@ export default function Home() {
 
         <div className="card">
           <Link href="/signup">
-            <button className="btn">Create account</button>
+            <button className="btn">Create parent account</button>
           </Link>
           <div style={{ height: "0.75rem" }} />
           <Link href="/login">
