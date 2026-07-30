@@ -1,19 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { pool } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { NextRequest } from "next/server";
-
-function json(body: unknown, init?: ResponseInit) {
-  return new Response(JSON.stringify(body), {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-}
 
 export async function POST(req: NextRequest) {
   const user = getSessionUser(req);
   if (!user || user.role !== "coach") {
-    return json({ error: "Coach access only." }, { status: 403 });
+    return NextResponse.json({ error: "Coach access only." }, { status: 403 });
   }
 
   const formData = await req.formData();
@@ -21,10 +14,10 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file");
 
   if (!fixtureId || typeof fixtureId !== "string") {
-    return json({ error: "fixture_id is required." }, { status: 400 });
+    return NextResponse.json({ error: "fixture_id is required." }, { status: 400 });
   }
   if (!file || !(file instanceof Blob)) {
-    return json({ error: "An Excel file is required." }, { status: 400 });
+    return NextResponse.json({ error: "An Excel file is required." }, { status: 400 });
   }
 
   const arrayBuffer = await file.arrayBuffer();
@@ -33,7 +26,7 @@ export async function POST(req: NextRequest) {
   const sheet = workbook.worksheets[0];
 
   if (!sheet) {
-    return json({ error: "The uploaded file has no sheets." }, { status: 400 });
+    return NextResponse.json({ error: "The uploaded file has no sheets." }, { status: 400 });
   }
 
   // Map header names to column numbers so we're not relying on fixed positions.
@@ -49,7 +42,7 @@ export async function POST(req: NextRequest) {
   const kicksCol = columnByHeader["kicks made"];
 
   if (!childIdCol || !triesCol || !kicksCol) {
-    return json(
+    return NextResponse.json(
       { error: "Expected 'Child ID', 'Tries', and 'Kicks Made' columns weren't found. Use the exported sheet as your starting point." },
       { status: 400 }
     );
@@ -81,5 +74,5 @@ export async function POST(req: NextRequest) {
     updated++;
   }
 
-  return json({ success: true, updated, errors });
+  return NextResponse.json({ success: true, updated, errors });
 }

@@ -41,6 +41,8 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    // call loadChildren inside an async effect to avoid setting state
+    // synchronously within the effect body
     (async () => {
       await loadChildren();
     })();
@@ -74,8 +76,8 @@ export default function DashboardPage() {
       <div className="topbar">
         <span className="brand display">Team Sheet</span>
         <div style={{ display: "flex", gap: "1rem" }}>
-          <link href="/stats" className="muted">Stats</link>
-          <link href="/availability" className="muted">Set availability &rarr;</link>
+          <Link href="/stats" className="muted">Stats</Link>
+          <Link href="/availability" className="muted">Set availability &rarr;</Link>
         </div>
       </div>
 

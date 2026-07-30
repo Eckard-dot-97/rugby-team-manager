@@ -78,21 +78,18 @@ export default function CoachDashboard() {
   }
 
   useEffect(() => {
-    async function initFixtures() {
+    async function fetchFixtures() {
       await loadFixtures();
     }
-
-    void initFixtures();
+    void fetchFixtures();
   }, []);
 
   useEffect(() => {
     if (!fixtureId) return;
-
-    async function initRoster() {
+    async function fetchRoster() {
       await loadRoster(fixtureId);
     }
-
-    void initRoster();
+    void fetchRoster();
   }, [fixtureId]);
 
   async function handleCreateFixture(e: React.FormEvent) {
