@@ -20,9 +20,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "An Excel file is required." }, { status: 400 });
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const arrayBuffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+  await workbook.xlsx.load(arrayBuffer);
   const sheet = workbook.worksheets[0];
 
   if (!sheet) {
