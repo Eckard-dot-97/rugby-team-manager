@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { POSITIONS } from "@/lib/positions";
+import { POSITIONS, type Position } from "@/lib/positions";
 
 type Child = {
   id: number;
@@ -18,7 +18,12 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    name: string;
+    position_1: Position;
+    position_2: Position;
+    position_3: Position;
+  }>({
     name: "",
     position_1: POSITIONS[0],
     position_2: POSITIONS[1],
@@ -27,16 +32,25 @@ export default function DashboardPage() {
 
   async function loadChildren() {
     setLoading(true);
-    const res = await fetch("/api/children");
-    if (res.ok) {
-      const data = await res.json();
-      setChildren(data.children);
+    try {
+      const res = await fetch("/api/children");
+      if (res.ok) {
+        const data = await res.json();
+        setChildren(data.children);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
-    loadChildren();
+    const timeoutId = window.setTimeout(() => {
+      void loadChildren();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
   async function handleAddChild(e: React.FormEvent) {
@@ -98,12 +112,12 @@ export default function DashboardPage() {
 
         <form className="card" onSubmit={handleAddChild}>
           <div className="field">
-            <label htmlFor="child_name">Child's name</label>
+            <label htmlFor="child_name">Child&apos;s name</label>
             <input
               id="child_name"
               required
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, position_1: e.target.value as Position }))}
             />
           </div>
 
@@ -112,7 +126,7 @@ export default function DashboardPage() {
             <select
               id="position_1"
               value={form.position_1}
-              onChange={(e) => setForm((f) => ({ ...f, position_1: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, position_1: e.target.value as Position }))}
             >
               {POSITIONS.map((p) => (
                 <option key={p} value={p}>{p}</option>
@@ -125,7 +139,7 @@ export default function DashboardPage() {
             <select
               id="position_2"
               value={form.position_2}
-              onChange={(e) => setForm((f) => ({ ...f, position_2: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, position_2: e.target.value as Position }))}
             >
               {POSITIONS.map((p) => (
                 <option key={p} value={p}>{p}</option>
@@ -138,7 +152,7 @@ export default function DashboardPage() {
             <select
               id="position_3"
               value={form.position_3}
-              onChange={(e) => setForm((f) => ({ ...f, position_3: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, position_3: e.target.value as Position }))}
             >
               {POSITIONS.map((p) => (
                 <option key={p} value={p}>{p}</option>
