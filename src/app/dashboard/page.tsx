@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { POSITIONS, type Position } from "@/lib/positions";
+import LogoutButton from "@/components/LogoutButton";
 
 type Child = {
   id: number;
@@ -30,22 +31,40 @@ export default function DashboardPage() {
     position_3: POSITIONS[2],
   });
 
-  async function loadChildren() {
+  const loadChildren = async () => {
     setLoading(true);
-    const res = await fetch("/api/children");
-    if (res.ok) {
+
+    try {
+      const res = await fetch("/api/children");
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Couldn't load children.");
+      }
+
       setChildren(data.children);
+      setError("");
+    } catch {
+      setError("Couldn't load children. Try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  };
 
   useEffect(() => {
-    // call loadChildren inside an async effect to avoid setting state
-    // synchronously within the effect body
-    (async () => {
+    let ignore = false;
+
+    const fetchChildren = async () => {
+      if (ignore) return;
+
       await loadChildren();
-    })();
+    };
+
+    void fetchChildren();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   async function handleAddChild(e: React.FormEvent) {
@@ -78,6 +97,7 @@ export default function DashboardPage() {
         <div style={{ display: "flex", gap: "1rem" }}>
           <Link href="/stats" className="muted">Stats</Link>
           <Link href="/availability" className="muted">Set availability &rarr;</Link>
+          <LogoutButton />
         </div>
       </div>
 

@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { RowDataPacket } from "mysql2";
 import { pool } from "@/lib/db";
 import { signToken } from "@/lib/auth";
-
-type UserRow = RowDataPacket & {
-  id: number;
-  email: string;
-  password_hash: string;
-  role: "coach" | "parent";
-};
 
 export async function POST(req: NextRequest) {
   const { email, password, expected_role } = await req.json();
@@ -18,11 +10,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
   }
 
-  const [rows] = await pool.query<UserRow[]>(
+  const [rows] = await pool.query(
     "SELECT id, email, password_hash, role FROM users WHERE email = ?",
     [email]
   );
-  const user = rows[0];
+  const user = (rows as any[])[0];
 
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });

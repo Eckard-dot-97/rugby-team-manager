@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import LogoutButton from "@/components/LogoutButton";
 
 type RosterRow = {
   child_id: number;
@@ -15,6 +16,7 @@ type RosterRow = {
   game_1: number | null;
   game_2: number | null;
   game_3: number | null;
+  position_played: string | null;
   tries: number | null;
   kicks_made: number | null;
 };
@@ -78,18 +80,17 @@ export default function CoachDashboard() {
   }
 
   useEffect(() => {
-    async function fetchFixtures() {
+    void (async () => {
       await loadFixtures();
-    }
-    void fetchFixtures();
+    })();
   }, []);
 
   useEffect(() => {
     if (!fixtureId) return;
-    async function fetchRoster() {
+
+    void (async () => {
       await loadRoster(fixtureId);
-    }
-    void fetchRoster();
+    })();
   }, [fixtureId]);
 
   async function handleCreateFixture(e: React.FormEvent) {
@@ -168,6 +169,7 @@ export default function CoachDashboard() {
     <div className="page">
       <div className="topbar">
         <span className="brand display">Team Sheet — Coach</span>
+        <LogoutButton />
       </div>
 
       <div className="container-wide">
@@ -265,6 +267,7 @@ export default function CoachDashboard() {
                   <th>G1</th>
                   <th>G2</th>
                   <th>G3</th>
+                  <th>Played</th>
                   <th>Tries</th>
                   <th>Kicks</th>
                 </tr>
@@ -282,6 +285,7 @@ export default function CoachDashboard() {
                     <td><Yes value={row.game_1} /></td>
                     <td><Yes value={row.game_2} /></td>
                     <td><Yes value={row.game_3} /></td>
+                    <td>{row.position_played ?? "—"}</td>
                     <td>{row.tries ?? "—"}</td>
                     <td>{row.kicks_made ?? "—"}</td>
                   </tr>

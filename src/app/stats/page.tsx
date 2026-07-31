@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import LogoutButton from "@/components/LogoutButton";
 
 type HistoryRow = {
   fixture_id: number;
@@ -10,8 +11,17 @@ type HistoryRow = {
   game_1: number | null;
   game_2: number | null;
   game_3: number | null;
+  position_played: string | null;
   tries: number | null;
   kicks_made: number | null;
+};
+
+type PositionStat = {
+  position: string;
+  tries: number;
+  kicks_made: number;
+  points: number;
+  games: number;
 };
 
 type ChildStats = {
@@ -21,6 +31,7 @@ type ChildStats = {
   total_kicks: number;
   total_points: number;
   games_with_stats: number;
+  by_position: PositionStat[];
   history: HistoryRow[];
 };
 
@@ -44,6 +55,7 @@ export default function StatsPage() {
         <div style={{ display: "flex", gap: "1rem" }}>
           <Link href="/dashboard" className="muted">Children</Link>
           <Link href="/availability" className="muted">Availability</Link>
+          <LogoutButton />
         </div>
       </div>
 
@@ -81,6 +93,34 @@ export default function StatsPage() {
                 </div>
               </div>
 
+              {child.by_position.length > 0 && (
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <div className="muted" style={{ fontSize: "0.75rem", marginBottom: "0.5rem" }}>BY POSITION</div>
+                  <table className="roster">
+                    <thead>
+                      <tr>
+                        <th>Position</th>
+                        <th>Games</th>
+                        <th>Tries</th>
+                        <th>Kicks</th>
+                        <th>Points</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {child.by_position.map((p) => (
+                        <tr key={p.position}>
+                          <td>{p.position}</td>
+                          <td>{p.games}</td>
+                          <td>{p.tries}</td>
+                          <td>{p.kicks_made}</td>
+                          <td>{p.points}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               {child.history.length > 0 && (
                 <table className="roster">
                   <thead>
@@ -90,6 +130,7 @@ export default function StatsPage() {
                       <th>G1</th>
                       <th>G2</th>
                       <th>G3</th>
+                      <th>Played</th>
                       <th>Tries</th>
                       <th>Kicks</th>
                     </tr>
@@ -102,6 +143,7 @@ export default function StatsPage() {
                         <td>{h.game_1 ? <span className="chip-yes">Yes</span> : <span className="chip-no">—</span>}</td>
                         <td>{h.game_2 ? <span className="chip-yes">Yes</span> : <span className="chip-no">—</span>}</td>
                         <td>{h.game_3 ? <span className="chip-yes">Yes</span> : <span className="chip-no">—</span>}</td>
+                        <td>{h.position_played ?? "—"}</td>
                         <td>{h.tries ?? "—"}</td>
                         <td>{h.kicks_made ?? "—"}</td>
                       </tr>

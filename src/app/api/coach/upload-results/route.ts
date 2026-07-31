@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
   });
 
   const childIdCol = columnByHeader["child id"];
+  const positionPlayedCol = columnByHeader["position played"];
   const triesCol = columnByHeader["tries"];
   const kicksCol = columnByHeader["kicks made"];
 
@@ -59,6 +60,8 @@ export async function POST(req: NextRequest) {
     const childId = Number(childIdRaw);
     const tries = Number(row.getCell(triesCol).value ?? 0);
     const kicksMade = Number(row.getCell(kicksCol).value ?? 0);
+    const positionPlayedRaw = positionPlayedCol ? row.getCell(positionPlayedCol).value : null;
+    const positionPlayed = positionPlayedRaw ? String(positionPlayedRaw).trim() : null;
 
     if (!Number.isInteger(childId) || Number.isNaN(tries) || Number.isNaN(kicksMade)) {
       errors.push(`Row ${rowNumber}: couldn't read child ID, tries, or kicks as numbers.`);
@@ -66,10 +69,13 @@ export async function POST(req: NextRequest) {
     }
 
     await pool.query(
-      `INSERT INTO game_stats (child_id, fixture_id, tries, kicks_made)
-       VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE tries = VALUES(tries), kicks_made = VALUES(kicks_made)`,
-      [childId, Number(fixtureId), tries, kicksMade]
+      `INSERT INTO game_stats (child_id, fixture_id, position_played, tries, kicks_made)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         position_played = VALUES(position_played),
+         tries = VALUES(tries),
+         kicks_made = VALUES(kicks_made)`,
+      [childId, Number(fixtureId), positionPlayed, tries, kicksMade]
     );
     updated++;
   }

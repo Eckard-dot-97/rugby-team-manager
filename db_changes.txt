@@ -1,0 +1,5 @@
+mysql -u root -p$MYSQL_ROOT_PASSWORD
+
+USE railway;
+
+UPDATE users SET role = 'coach' WHERE email = 'breedt.mrc@gmail.com';

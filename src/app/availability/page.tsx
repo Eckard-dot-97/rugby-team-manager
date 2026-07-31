@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import LogoutButton from "@/components/LogoutButton";
 
 type Row = {
   child_id: number;
@@ -75,20 +76,35 @@ export default function AvailabilityPage() {
   async function saveRow(row: Row) {
     setSavingId(row.child_id);
     setSavedId(null);
-    const res = await fetch("/api/availability", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        child_id: row.child_id,
-        fixture_id: Number(fixtureId),
-        friday_training: !!row.friday_training,
-        game_1: !!row.game_1,
-        game_2: !!row.game_2,
-        game_3: !!row.game_3,
-      }),
-    });
-    setSavingId(null);
-    if (res.ok) setSavedId(row.child_id);
+    setError("");
+
+    try {
+      const res = await fetch("/api/availability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          child_id: row.child_id,
+          fixture_id: Number(fixtureId),
+          friday_training: !!row.friday_training,
+          game_1: !!row.game_1,
+          game_2: !!row.game_2,
+          game_3: !!row.game_3,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Couldn't save availability for ${row.name}.`);
+        setSavingId(null);
+        return;
+      }
+
+      setSavingId(null);
+      setSavedId(row.child_id);
+    } catch {
+      setError(`Couldn't reach the server while saving ${row.name}'s availability.`);
+      setSavingId(null);
+    }
   }
 
   return (
@@ -98,6 +114,7 @@ export default function AvailabilityPage() {
         <div style={{ display: "flex", gap: "1rem" }}>
           <Link href="/dashboard" className="muted">Children</Link>
           <Link href="/stats" className="muted">Stats</Link>
+          <LogoutButton />
         </div>
       </div>
 

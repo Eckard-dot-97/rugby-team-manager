@@ -26,11 +26,24 @@ export async function GET(req: NextRequest) {
     );
     const totalsRow = (totals as any[])[0];
 
+    const [byPosition] = await pool.query(
+      `SELECT
+         position_played,
+         COALESCE(SUM(tries), 0) AS tries,
+         COALESCE(SUM(kicks_made), 0) AS kicks_made,
+         COUNT(*) AS games
+       FROM game_stats
+       WHERE child_id = ? AND position_played IS NOT NULL AND position_played != ''
+       GROUP BY position_played
+       ORDER BY tries DESC`,
+      [child.id]
+    );
+
     const [history] = await pool.query(
       `SELECT
          f.id AS fixture_id, f.week_date,
          a.friday_training, a.game_1, a.game_2, a.game_3,
-         g.tries, g.kicks_made
+         g.position_played, g.tries, g.kicks_made
        FROM fixtures f
        LEFT JOIN availability a ON a.fixture_id = f.id AND a.child_id = ?
        LEFT JOIN game_stats g ON g.fixture_id = f.id AND g.child_id = ?
@@ -45,6 +58,13 @@ export async function GET(req: NextRequest) {
       total_kicks: totalsRow.total_kicks,
       total_points: calculatePoints(totalsRow.total_tries, totalsRow.total_kicks),
       games_with_stats: totalsRow.games_with_stats,
+      by_position: (byPosition as any[]).map((p) => ({
+        position: p.position_played,
+        tries: p.tries,
+        kicks_made: p.kicks_made,
+        points: calculatePoints(p.tries, p.kicks_made),
+        games: p.games,
+      })),
       history,
     });
   }

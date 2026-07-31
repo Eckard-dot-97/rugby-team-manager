@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
        c.position_1, c.position_2, c.position_3,
        u.name AS parent_name, u.surname AS parent_surname, u.cell_number,
        a.friday_training, a.game_1, a.game_2, a.game_3,
-       g.tries, g.kicks_made
+       g.position_played, g.tries, g.kicks_made
      FROM children c
      JOIN users u ON u.id = c.parent_id
      LEFT JOIN availability a ON a.child_id = c.id AND a.fixture_id = ?
@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
     { header: "Game 1", key: "game_1", width: 10 },
     { header: "Game 2", key: "game_2", width: 10 },
     { header: "Game 3", key: "game_3", width: 10 },
+    { header: "Position Played", key: "position_played", width: 16 },
     { header: "Tries", key: "tries", width: 10 },
     { header: "Kicks Made", key: "kicks_made", width: 12 },
   ];
@@ -54,6 +55,9 @@ export async function GET(req: NextRequest) {
   // the re-uploaded sheet gets matched back to the right child.
   sheet.getColumn("child_id").font = { color: { argb: "FFAAAAAA" } };
 
+  const positionPlayedColNumber = sheet.getColumn("position_played").number;
+
+  let rowIndex = 2; // header is row 1
   for (const row of rows as any[]) {
     sheet.addRow({
       ...row,
@@ -61,9 +65,22 @@ export async function GET(req: NextRequest) {
       game_1: row.game_1 ? "Yes" : "No",
       game_2: row.game_2 ? "Yes" : "No",
       game_3: row.game_3 ? "Yes" : "No",
+      position_played: row.position_played ?? "",
       tries: row.tries ?? 0,
       kicks_made: row.kicks_made ?? 0,
     });
+
+    // Limit "Position Played" to this child's own 3 saved positions,
+    // so the coach picks from a dropdown instead of typing freely.
+    const positions = [row.position_1, row.position_2, row.position_3].filter(Boolean);
+    if (positions.length > 0) {
+      sheet.getCell(rowIndex, positionPlayedColNumber).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: [`"${positions.join(",")}"`],
+      };
+    }
+    rowIndex++;
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
