@@ -62,3 +62,17 @@ CREATE TABLE game_stats (
   FOREIGN KEY (fixture_id) REFERENCES fixtures(id) ON DELETE CASCADE,
   UNIQUE KEY unique_child_fixture_stats (child_id, fixture_id)
 );
+
+-- Coach-built team sheet per Saturday game (1, 2, or 3). One row per
+-- jersey slot (15 per game); child_id is NULL if that slot is unfilled.
+CREATE TABLE team_selections (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  fixture_id INT NOT NULL,
+  game_number TINYINT NOT NULL,
+  jersey_number TINYINT NOT NULL,
+  position VARCHAR(50) NOT NULL,
+  child_id INT NULL,
+  FOREIGN KEY (fixture_id) REFERENCES fixtures(id) ON DELETE CASCADE,
+  FOREIGN KEY (child_id) REFERENCES children(id) ON DELETE SET NULL,
+  UNIQUE KEY unique_fixture_game_jersey (fixture_id, game_number, jersey_number)
+);

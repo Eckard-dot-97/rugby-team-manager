@@ -83,6 +83,36 @@ export async function GET(req: NextRequest) {
     rowIndex++;
   }
 
+  // One worksheet per game that has a saved team sheet.
+  for (const gameNumber of [1, 2, 3]) {
+    const [teamRows] = await pool.query(
+      `SELECT t.jersey_number, t.position, c.name AS child_name
+       FROM team_selections t
+       LEFT JOIN children c ON c.id = t.child_id
+       WHERE t.fixture_id = ? AND t.game_number = ?
+       ORDER BY t.jersey_number`,
+      [fixtureId, gameNumber]
+    );
+
+    if ((teamRows as any[]).length === 0) continue;
+
+    const teamSheet = workbook.addWorksheet(`Team - Game ${gameNumber}`);
+    teamSheet.columns = [
+      { header: "#", key: "jersey_number", width: 6 },
+      { header: "Position", key: "position", width: 20 },
+      { header: "Player", key: "child_name", width: 22 },
+    ];
+    teamSheet.getRow(1).font = { bold: true };
+
+    for (const row of teamRows as any[]) {
+      teamSheet.addRow({
+        jersey_number: row.jersey_number,
+        position: row.position,
+        child_name: row.child_name ?? "— unfilled —",
+      });
+    }
+  }
+
   const buffer = await workbook.xlsx.writeBuffer();
 
   return new NextResponse(buffer, {

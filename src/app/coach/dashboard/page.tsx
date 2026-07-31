@@ -29,6 +29,30 @@ type Fixture = {
   game_3_label: string;
 };
 
+type TeamSlot = {
+  jersey_number: number;
+  position: string;
+  child_id: number | null;
+  child_name: string | null;
+};
+
+type AvailableChild = {
+  child_id: number;
+  name: string;
+  positions: string[];
+};
+
+type SquadPositionGroup = {
+  position: string;
+  children: {
+    child_id: number;
+    name: string;
+    game_1: number | null;
+    game_2: number | null;
+    game_3: number | null;
+  }[];
+};
+
 function Yes({ value }: { value: number | null }) {
   return value ? <span className="chip-yes">Yes</span> : <span className="chip-no">No</span>;
 }
@@ -47,6 +71,17 @@ export default function CoachDashboard() {
   const [newDate, setNewDate] = useState("");
   const [creating, setCreating] = useState(false);
   const [showNewFixture, setShowNewFixture] = useState(false);
+
+  // Team builder
+  const [teamGameNumber, setTeamGameNumber] = useState<"1" | "2" | "3">("1");
+  const [teamSlots, setTeamSlots] = useState<TeamSlot[]>([]);
+  const [availableChildren, setAvailableChildren] = useState<AvailableChild[]>([]);
+  const [squadByPosition, setSquadByPosition] = useState<SquadPositionGroup[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [savingTeam, setSavingTeam] = useState(false);
+  const [teamMessage, setTeamMessage] = useState("");
+  const [showSquad, setShowSquad] = useState(false);
 
   async function loadFixtures(selectId?: number) {
     const res = await fetch("/api/fixtures");
@@ -80,18 +115,110 @@ export default function CoachDashboard() {
   }
 
   useEffect(() => {
-    void (async () => {
+    const run = async () => {
       await loadFixtures();
-    })();
+    };
+
+    void run();
   }, []);
 
   useEffect(() => {
     if (!fixtureId) return;
 
-    void (async () => {
+    const run = async () => {
       await loadRoster(fixtureId);
-    })();
+    };
+
+    void run();
   }, [fixtureId]);
+
+  async function loadTeam(id: string, gameNumber: string) {
+    if (!id) return;
+    setTeamLoading(true);
+    const res = await fetch(`/api/coach/team?fixture_id=${id}&game_number=${gameNumber}`);
+    const data = await res.json();
+    if (res.ok) {
+      setTeamSlots(data.slots);
+      setAvailableChildren(data.available_children);
+      setSquadByPosition(data.squad_by_position);
+    }
+    setTeamLoading(false);
+  }
+
+  function handleFixtureChange(nextFixtureId: string) {
+    setFixtureId(nextFixtureId);
+    if (nextFixtureId) {
+      void loadTeam(nextFixtureId, teamGameNumber);
+    }
+  }
+
+  function handleGameChange(nextGameNumber: "1" | "2" | "3") {
+    setTeamGameNumber(nextGameNumber);
+    if (fixtureId) {
+      void loadTeam(fixtureId, nextGameNumber);
+    }
+  }
+
+  async function handleGenerateTeam() {
+    setGenerating(true);
+    setTeamMessage("");
+    setError("");
+
+    const res = await fetch("/api/coach/generate-team", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fixture_id: Number(fixtureId), game_number: Number(teamGameNumber) }),
+    });
+    const data = await res.json();
+    setGenerating(false);
+
+    if (!res.ok) {
+      setError(data.error || "Couldn't generate a team.");
+      return;
+    }
+
+    setTeamMessage(`Filled ${data.filled} of ${data.total} positions.`);
+    loadTeam(fixtureId, teamGameNumber);
+  }
+
+  function handleSlotChildChange(jerseyNumber: number, childId: string) {
+    setTeamSlots((prev) =>
+      prev.map((s) =>
+        s.jersey_number === jerseyNumber
+          ? {
+              ...s,
+              child_id: childId ? Number(childId) : null,
+              child_name: childId ? availableChildren.find((c) => c.child_id === Number(childId))?.name ?? null : null,
+            }
+          : s
+      )
+    );
+  }
+
+  async function handleSaveTeam() {
+    setSavingTeam(true);
+    setTeamMessage("");
+    setError("");
+
+    const res = await fetch("/api/coach/team", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fixture_id: Number(fixtureId),
+        game_number: Number(teamGameNumber),
+        assignments: teamSlots.map((s) => ({ jersey_number: s.jersey_number, child_id: s.child_id })),
+      }),
+    });
+    setSavingTeam(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Couldn't save the team.");
+      return;
+    }
+
+    setTeamMessage("Team saved.");
+  }
 
   async function handleCreateFixture(e: React.FormEvent) {
     e.preventDefault();
@@ -294,6 +421,123 @@ export default function CoachDashboard() {
             </table>
           </div>
         )}
+
+        <div className="card" style={{ marginTop: "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.6rem" }}>
+            <h2 className="display" style={{ fontSize: "1.3rem" }}>Team builder</h2>
+            <div style={{ display: "flex", gap: "0.4rem" }}>
+              {(["1", "2", "3"] as const).map((g) => (
+                <button
+                  key={g}
+                  className={teamGameNumber === g ? "btn" : "btn btn-ghost"}
+                  style={{ width: "auto", padding: "0.5rem 1rem" }}
+                  onClick={() => setTeamGameNumber(g)}
+                >
+                  Game {g}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            className="btn btn-ghost"
+            style={{ width: "auto", padding: "0.5rem 1rem", marginTop: "1rem" }}
+            onClick={() => setShowSquad((s) => !s)}
+          >
+            {showSquad ? "Hide squad by position" : "Show squad by position"}
+          </button>
+
+          {showSquad && (
+            <div style={{ marginTop: "1rem", overflowX: "auto" }}>
+              <table className="roster">
+                <thead>
+                  <tr>
+                    <th>Position</th>
+                    <th>Available children</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {squadByPosition.map((group) => (
+                    <tr key={group.position}>
+                      <td>{group.position}</td>
+                      <td>
+                        {group.children.length === 0
+                          ? "—"
+                          : group.children.map((c) => {
+                              const games = [
+                                c.game_1 ? "G1" : null,
+                                c.game_2 ? "G2" : null,
+                                c.game_3 ? "G3" : null,
+                              ].filter(Boolean);
+                              return (
+                                <span key={c.child_id} className="jersey-tag">
+                                  {c.name} ({games.length > 0 ? games.join(" ") : "unavailable"})
+                                </span>
+                              );
+                            })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <button
+            className="btn"
+            style={{ width: "auto", padding: "0.65rem 1.2rem", marginTop: "1.25rem" }}
+            onClick={handleGenerateTeam}
+            disabled={generating || !fixtureId}
+          >
+            {generating ? "Generating..." : "Generate team"}
+          </button>
+
+          {teamMessage && <p className="muted" style={{ marginTop: "0.75rem" }}>{teamMessage}</p>}
+
+          {teamLoading ? (
+            <p className="muted" style={{ marginTop: "1rem" }}>Loading...</p>
+          ) : (
+            <div style={{ marginTop: "1.25rem", overflowX: "auto" }}>
+              <table className="roster">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Position</th>
+                    <th>Player</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamSlots.map((slot) => (
+                    <tr key={slot.jersey_number}>
+                      <td>{slot.jersey_number}</td>
+                      <td>{slot.position}</td>
+                      <td>
+                        <select
+                          value={slot.child_id ?? ""}
+                          onChange={(e) => handleSlotChildChange(slot.jersey_number, e.target.value)}
+                        >
+                          <option value="">— empty —</option>
+                          {availableChildren.map((c) => (
+                            <option key={c.child_id} value={c.child_id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <button
+            className="btn"
+            style={{ width: "auto", padding: "0.65rem 1.2rem", marginTop: "1.25rem" }}
+            onClick={handleSaveTeam}
+            disabled={savingTeam || teamSlots.length === 0}
+          >
+            {savingTeam ? "Saving..." : "Save changes"}
+          </button>
+        </div>
       </div>
     </div>
   );

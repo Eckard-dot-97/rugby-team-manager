@@ -31,40 +31,22 @@ export default function DashboardPage() {
     position_3: POSITIONS[2],
   });
 
-  const loadChildren = async () => {
+  async function loadChildren() {
     setLoading(true);
-
-    try {
-      const res = await fetch("/api/children");
+    const res = await fetch("/api/children");
+    if (res.ok) {
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Couldn't load children.");
-      }
-
       setChildren(data.children);
-      setError("");
-    } catch {
-      setError("Couldn't load children. Try again.");
-    } finally {
-      setLoading(false);
     }
-  };
+    setLoading(false);
+  }
 
   useEffect(() => {
-    let ignore = false;
+    const timeoutId = window.setTimeout(() => {
+      void loadChildren();
+    }, 0);
 
-    const fetchChildren = async () => {
-      if (ignore) return;
-
-      await loadChildren();
-    };
-
-    void fetchChildren();
-
-    return () => {
-      ignore = true;
-    };
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   async function handleAddChild(e: React.FormEvent) {
