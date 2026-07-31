@@ -31,7 +31,31 @@ CREATE TABLE fixtures (
   game_1_label VARCHAR(100) DEFAULT 'Game 1',
   game_2_label VARCHAR(100) DEFAULT 'Game 2',
   game_3_label VARCHAR(100) DEFAULT 'Game 3',
+  competition VARCHAR(100) NULL,
+  opponent VARCHAR(100) NULL,
+  venue VARCHAR(150) NULL,
+  kickoff_time VARCHAR(20) NULL,
+  referee_name VARCHAR(100) NULL,
+  referee_bs_no VARCHAR(30) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Club-level defaults for the team sheet header — set once, editable any time.
+-- Single row (id always 1).
+CREATE TABLE club_settings (
+  id INT PRIMARY KEY DEFAULT 1,
+  club_name VARCHAR(150) NULL,
+  team_age_group VARCHAR(30) NULL,
+  coach_1_name VARCHAR(100) NULL,
+  coach_1_bs_no VARCHAR(30) NULL,
+  coach_2_name VARCHAR(100) NULL,
+  coach_2_bs_no VARCHAR(30) NULL,
+  coach_3_name VARCHAR(100) NULL,
+  coach_3_bs_no VARCHAR(30) NULL,
+  team_manager_name VARCHAR(100) NULL,
+  team_manager_email VARCHAR(150) NULL,
+  team_manager_cell VARCHAR(30) NULL,
+  team_manager_bs_no VARCHAR(30) NULL
 );
 
 CREATE TABLE availability (

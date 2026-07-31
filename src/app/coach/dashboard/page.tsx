@@ -27,6 +27,60 @@ type Fixture = {
   game_1_label: string;
   game_2_label: string;
   game_3_label: string;
+  competition: string | null;
+  opponent: string | null;
+  venue: string | null;
+  kickoff_time: string | null;
+  referee_name: string | null;
+  referee_bs_no: string | null;
+};
+
+type ClubSettings = {
+  club_name: string;
+  team_age_group: string;
+  coach_1_name: string;
+  coach_1_bs_no: string;
+  coach_2_name: string;
+  coach_2_bs_no: string;
+  coach_3_name: string;
+  coach_3_bs_no: string;
+  team_manager_name: string;
+  team_manager_email: string;
+  team_manager_cell: string;
+  team_manager_bs_no: string;
+};
+
+const EMPTY_CLUB_SETTINGS: ClubSettings = {
+  club_name: "",
+  team_age_group: "",
+  coach_1_name: "",
+  coach_1_bs_no: "",
+  coach_2_name: "",
+  coach_2_bs_no: "",
+  coach_3_name: "",
+  coach_3_bs_no: "",
+  team_manager_name: "",
+  team_manager_email: "",
+  team_manager_cell: "",
+  team_manager_bs_no: "",
+};
+
+type FixtureMeta = {
+  competition: string;
+  opponent: string;
+  venue: string;
+  kickoff_time: string;
+  referee_name: string;
+  referee_bs_no: string;
+};
+
+const EMPTY_FIXTURE_META: FixtureMeta = {
+  competition: "",
+  opponent: "",
+  venue: "",
+  kickoff_time: "",
+  referee_name: "",
+  referee_bs_no: "",
 };
 
 type TeamSlot = {
@@ -83,11 +137,43 @@ export default function CoachDashboard() {
   const [teamMessage, setTeamMessage] = useState("");
   const [showSquad, setShowSquad] = useState(false);
 
+  // Club settings
+  const [clubSettings, setClubSettings] = useState<ClubSettings>(EMPTY_CLUB_SETTINGS);
+  const [showClubSettings, setShowClubSettings] = useState(false);
+  const [savingClubSettings, setSavingClubSettings] = useState(false);
+  const [clubSettingsMessage, setClubSettingsMessage] = useState("");
+
+  // Per-fixture match details
+  const [fixtureMeta, setFixtureMeta] = useState<FixtureMeta>(EMPTY_FIXTURE_META);
+  const [showFixtureMeta, setShowFixtureMeta] = useState(false);
+  const [savingFixtureMeta, setSavingFixtureMeta] = useState(false);
+  const [fixtureMetaMessage, setFixtureMetaMessage] = useState("");
+
+  function updateFixtureMeta(fixture?: Fixture) {
+    setFixtureMeta({
+      competition: fixture?.competition || "",
+      opponent: fixture?.opponent || "",
+      venue: fixture?.venue || "",
+      kickoff_time: fixture?.kickoff_time || "",
+      referee_name: fixture?.referee_name || "",
+      referee_bs_no: fixture?.referee_bs_no || "",
+    });
+  }
+
   async function loadFixtures(selectId?: number) {
     const res = await fetch("/api/fixtures");
     const data = await res.json();
     if (res.ok) {
       setFixtures(data.fixtures);
+
+      const nextFixture = selectId
+        ? data.fixtures.find((fixture: Fixture) => fixture.id === selectId)
+        : data.fixtures.find((fixture: Fixture) => String(fixture.id) === fixtureId) || data.fixtures[0];
+
+      if (nextFixture) {
+        updateFixtureMeta(nextFixture);
+      }
+
       if (selectId) {
         setFixtureId(String(selectId));
       } else if (data.fixtures.length > 0) {
@@ -114,23 +200,94 @@ export default function CoachDashboard() {
     setLoading(false);
   }
 
-  useEffect(() => {
-    const run = async () => {
-      await loadFixtures();
-    };
+  async function loadClubSettings() {
+    const res = await fetch("/api/coach/club-settings");
+    const data = await res.json();
+    if (res.ok && data.settings) {
+      setClubSettings({ ...EMPTY_CLUB_SETTINGS, ...data.settings });
+    }
+  }
 
-    void run();
+  useEffect(() => {
+    let active = true;
+
+    void (async () => {
+      const res = await fetch("/api/fixtures");
+      const data = await res.json();
+
+      if (!active || !res.ok) return;
+
+      setFixtures(data.fixtures);
+      if (data.fixtures.length > 0) {
+        setFixtureId((current) => current || String(data.fixtures[0].id));
+      }
+    })();
+
+    void (async () => {
+      await loadClubSettings();
+    })();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     if (!fixtureId) return;
 
-    const run = async () => {
-      await loadRoster(fixtureId);
-    };
+    const id = fixtureId;
+    const timeout = setTimeout(() => {
+      void loadRoster(id);
+    }, 0);
 
-    void run();
+    return () => clearTimeout(timeout);
   }, [fixtureId]);
+
+  function handleFixtureSelection(nextFixtureId: string) {
+    setFixtureId(nextFixtureId);
+
+    const fixture = fixtures.find((f) => String(f.id) === nextFixtureId);
+    updateFixtureMeta(fixture);
+  }
+
+  async function handleSaveClubSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingClubSettings(true);
+    setClubSettingsMessage("");
+
+    const res = await fetch("/api/coach/club-settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(clubSettings),
+    });
+    setSavingClubSettings(false);
+
+    if (!res.ok) {
+      setClubSettingsMessage("Couldn't save club settings.");
+      return;
+    }
+    setClubSettingsMessage("Club settings saved.");
+  }
+
+  async function handleSaveFixtureMeta(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingFixtureMeta(true);
+    setFixtureMetaMessage("");
+
+    const res = await fetch("/api/coach/fixtures", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: Number(fixtureId), ...fixtureMeta }),
+    });
+    setSavingFixtureMeta(false);
+
+    if (!res.ok) {
+      setFixtureMetaMessage("Couldn't save match details.");
+      return;
+    }
+    setFixtureMetaMessage("Match details saved.");
+    loadFixtures(Number(fixtureId));
+  }
 
   async function loadTeam(id: string, gameNumber: string) {
     if (!id) return;
@@ -145,19 +302,15 @@ export default function CoachDashboard() {
     setTeamLoading(false);
   }
 
-  function handleFixtureChange(nextFixtureId: string) {
-    setFixtureId(nextFixtureId);
-    if (nextFixtureId) {
-      void loadTeam(nextFixtureId, teamGameNumber);
-    }
-  }
+  useEffect(() => {
+    if (!fixtureId) return;
 
-  function handleGameChange(nextGameNumber: "1" | "2" | "3") {
-    setTeamGameNumber(nextGameNumber);
-    if (fixtureId) {
-      void loadTeam(fixtureId, nextGameNumber);
-    }
-  }
+    const timeoutId = window.setTimeout(() => {
+      void loadTeam(fixtureId, teamGameNumber);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [fixtureId, teamGameNumber]);
 
   async function handleGenerateTeam() {
     setGenerating(true);
@@ -301,6 +454,75 @@ export default function CoachDashboard() {
 
       <div className="container-wide">
         <div className="card" style={{ marginBottom: "1.5rem" }}>
+          <button
+            className="btn btn-ghost"
+            style={{ width: "auto", padding: "0.5rem 1rem" }}
+            onClick={() => setShowClubSettings((s) => !s)}
+          >
+            {showClubSettings ? "Hide club settings" : "Club settings"}
+          </button>
+
+          {showClubSettings && (
+            <form onSubmit={handleSaveClubSettings} style={{ marginTop: "1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 1rem" }}>
+                <div className="field">
+                  <label htmlFor="club_name">Club name</label>
+                  <input id="club_name" value={clubSettings.club_name} onChange={(e) => setClubSettings((c) => ({ ...c, club_name: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="team_age_group">Team / age group</label>
+                  <input id="team_age_group" value={clubSettings.team_age_group} onChange={(e) => setClubSettings((c) => ({ ...c, team_age_group: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="coach_1_name">Coach 1 name</label>
+                  <input id="coach_1_name" value={clubSettings.coach_1_name} onChange={(e) => setClubSettings((c) => ({ ...c, coach_1_name: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="coach_1_bs_no">Coach 1 BokSmart no.</label>
+                  <input id="coach_1_bs_no" value={clubSettings.coach_1_bs_no} onChange={(e) => setClubSettings((c) => ({ ...c, coach_1_bs_no: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="coach_2_name">Coach 2 name</label>
+                  <input id="coach_2_name" value={clubSettings.coach_2_name} onChange={(e) => setClubSettings((c) => ({ ...c, coach_2_name: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="coach_2_bs_no">Coach 2 BokSmart no.</label>
+                  <input id="coach_2_bs_no" value={clubSettings.coach_2_bs_no} onChange={(e) => setClubSettings((c) => ({ ...c, coach_2_bs_no: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="coach_3_name">Coach 3 name</label>
+                  <input id="coach_3_name" value={clubSettings.coach_3_name} onChange={(e) => setClubSettings((c) => ({ ...c, coach_3_name: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="coach_3_bs_no">Coach 3 BokSmart no.</label>
+                  <input id="coach_3_bs_no" value={clubSettings.coach_3_bs_no} onChange={(e) => setClubSettings((c) => ({ ...c, coach_3_bs_no: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="team_manager_name">Team manager name</label>
+                  <input id="team_manager_name" value={clubSettings.team_manager_name} onChange={(e) => setClubSettings((c) => ({ ...c, team_manager_name: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="team_manager_bs_no">Team manager BokSmart no.</label>
+                  <input id="team_manager_bs_no" value={clubSettings.team_manager_bs_no} onChange={(e) => setClubSettings((c) => ({ ...c, team_manager_bs_no: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="team_manager_email">Team manager email</label>
+                  <input id="team_manager_email" type="email" value={clubSettings.team_manager_email} onChange={(e) => setClubSettings((c) => ({ ...c, team_manager_email: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label htmlFor="team_manager_cell">Team manager cell</label>
+                  <input id="team_manager_cell" value={clubSettings.team_manager_cell} onChange={(e) => setClubSettings((c) => ({ ...c, team_manager_cell: e.target.value }))} />
+                </div>
+              </div>
+              <button className="btn" style={{ width: "auto", padding: "0.65rem 1.2rem" }} type="submit" disabled={savingClubSettings}>
+                {savingClubSettings ? "Saving..." : "Save club settings"}
+              </button>
+              {clubSettingsMessage && <p className="muted" style={{ marginTop: "0.5rem" }}>{clubSettingsMessage}</p>}
+            </form>
+          )}
+        </div>
+
+        <div className="card" style={{ marginBottom: "1.5rem" }}>
           <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
             <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: "12rem" }}>
               <label htmlFor="fixture_id">Fixture week</label>
@@ -371,6 +593,53 @@ export default function CoachDashboard() {
                 {creating ? "Creating..." : "Create fixture"}
               </button>
             </form>
+          )}
+
+          {fixtureId && (
+            <>
+              <button
+                className="btn btn-ghost"
+                style={{ width: "auto", padding: "0.5rem 1rem", marginTop: "1.25rem" }}
+                onClick={() => setShowFixtureMeta((s) => !s)}
+              >
+                {showFixtureMeta ? "Hide match details" : "Match details (competition, venue, referee)"}
+              </button>
+
+              {showFixtureMeta && (
+                <form onSubmit={handleSaveFixtureMeta} style={{ marginTop: "1rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 1rem" }}>
+                    <div className="field">
+                      <label htmlFor="competition">Competition</label>
+                      <input id="competition" value={fixtureMeta.competition} onChange={(e) => setFixtureMeta((f) => ({ ...f, competition: e.target.value }))} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="opponent">Opponent</label>
+                      <input id="opponent" value={fixtureMeta.opponent} onChange={(e) => setFixtureMeta((f) => ({ ...f, opponent: e.target.value }))} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="venue">Venue</label>
+                      <input id="venue" value={fixtureMeta.venue} onChange={(e) => setFixtureMeta((f) => ({ ...f, venue: e.target.value }))} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="kickoff_time">Kick-off time</label>
+                      <input id="kickoff_time" placeholder="e.g. 09:00" value={fixtureMeta.kickoff_time} onChange={(e) => setFixtureMeta((f) => ({ ...f, kickoff_time: e.target.value }))} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="referee_name">Referee name</label>
+                      <input id="referee_name" value={fixtureMeta.referee_name} onChange={(e) => setFixtureMeta((f) => ({ ...f, referee_name: e.target.value }))} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="referee_bs_no">Referee BokSmart no.</label>
+                      <input id="referee_bs_no" value={fixtureMeta.referee_bs_no} onChange={(e) => setFixtureMeta((f) => ({ ...f, referee_bs_no: e.target.value }))} />
+                    </div>
+                  </div>
+                  <button className="btn" style={{ width: "auto", padding: "0.65rem 1.2rem" }} type="submit" disabled={savingFixtureMeta}>
+                    {savingFixtureMeta ? "Saving..." : "Save match details"}
+                  </button>
+                  {fixtureMetaMessage && <p className="muted" style={{ marginTop: "0.5rem" }}>{fixtureMetaMessage}</p>}
+                </form>
+              )}
+            </>
           )}
         </div>
 

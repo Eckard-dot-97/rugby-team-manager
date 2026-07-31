@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
 
   const [rows] = await pool.query(
-    `SELECT id, week_date, game_1_label, game_2_label, game_3_label
+    `SELECT id, week_date, game_1_label, game_2_label, game_3_label,
+            competition, opponent, venue, kickoff_time, referee_name, referee_bs_no
      FROM fixtures
      ORDER BY week_date DESC`
   );

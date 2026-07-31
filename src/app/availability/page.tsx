@@ -56,13 +56,58 @@ export default function AvailabilityPage() {
   }
 
   useEffect(() => {
-    loadFixtures();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let active = true;
+
+    const load = async () => {
+      const res = await fetch("/api/fixtures");
+      const data = await res.json();
+
+      if (!active) return;
+
+      if (res.ok) {
+        setFixtures(data.fixtures);
+        if (data.fixtures.length > 0) {
+          setFixtureId((current) => current || String(data.fixtures[0].id));
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (fixtureId) loadAvailability();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!fixtureId) return;
+
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+      setError("");
+
+      const res = await fetch(`/api/availability?fixture_id=${fixtureId}`);
+      const data = await res.json();
+
+      if (!active) return;
+
+      if (!res.ok) {
+        setError(data.error || "Couldn't load availability for this fixture.");
+        setRows([]);
+      } else {
+        setRows(data.availability);
+      }
+
+      setLoading(false);
+    };
+
+    void load();
+
+    return () => {
+      active = false;
+    };
   }, [fixtureId]);
 
   function toggle(childId: number, field: keyof Row) {
