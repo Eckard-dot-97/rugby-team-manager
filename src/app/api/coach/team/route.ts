@@ -19,6 +19,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "fixture_id and a valid game_number (1, 2, or 3) are required." }, { status: 400 });
   }
   const gameColumn = GAME_COLUMNS[gameNumber];
+  const [alreadyPlayedRows] = await pool.query(
+    `SELECT child_id, position
+    FROM team_selections
+    WHERE fixture_id = ?
+      AND game_number <> ?`,
+    [fixtureId, gameNumber]
+  );
+
+  const alreadyPlayedMap = new Map<number, string[]>();
+
+  for (const row of alreadyPlayedRows as any[]) {
+    if (!alreadyPlayedMap.has(row.child_id)) {
+      alreadyPlayedMap.set(row.child_id, []);
+    }
+
+    alreadyPlayedMap.get(row.child_id)!.push(row.position);
+  }
 
   // Every child, with their 3 positions and per-game availability for this fixture —
   // used for the "squad by position" grouping view.
@@ -46,12 +63,14 @@ export async function GET(req: NextRequest) {
 
   // Children available for this specific game — candidates for the dropdown.
   const availableChildren = (squadRows as any[])
-    .filter((c) => c[gameColumn])
-    .map((c) => ({
-      child_id: c.child_id,
-      name: c.name,
-      positions: [c.position_1, c.position_2, c.position_3],
-    }));
+  .filter((c) => c[gameColumn])
+  .map((c) => ({
+    child_id: c.child_id,
+    name: c.name,
+    positions: [c.position_1, c.position_2, c.position_3],
+    already_played_positions:
+      alreadyPlayedMap.get(c.child_id) ?? [],
+  }));
 
   // Current saved team sheet for this fixture/game, if any.
   const [savedRows] = await pool.query(

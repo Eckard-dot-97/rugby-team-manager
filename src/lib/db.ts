@@ -6,6 +6,11 @@ declare global {
   var _mysqlPool: mysql.Pool | undefined;
 }
 
+
+console.log("POST /api/children called");
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
+
+
 export const pool =
   global._mysqlPool ??
   mysql.createPool({

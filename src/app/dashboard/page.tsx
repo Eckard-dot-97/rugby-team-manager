@@ -8,6 +8,8 @@ import LogoutButton from "@/components/LogoutButton";
 type Child = {
   id: number;
   name: string;
+  date_of_birth: string | null;
+  school: string | null;
   position_1: string;
   position_2: string;
   position_3: string;
@@ -21,11 +23,15 @@ export default function DashboardPage() {
 
   const [form, setForm] = useState<{
     name: string;
+    date_of_birth: string;
+    school: string;
     position_1: Position;
     position_2: Position;
     position_3: Position;
   }>({
     name: "",
+    date_of_birth: "",
+    school: "",
     position_1: POSITIONS[0],
     position_2: POSITIONS[1],
     position_3: POSITIONS[2],
@@ -49,28 +55,70 @@ export default function DashboardPage() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
+  // async function handleAddChild(e: React.FormEvent) {
+  //   console.log("handleAddChild called");
+  //   e.preventDefault();
+  //   setError("");
+  //   setSubmitting(true);
+
+  //   const res = await fetch("/api/children", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(form),
+  //   });
+  //   const data = await res.json();
+
+  //   if (!res.ok) {
+  //     setError(data.error || "Couldn't add child. Try again.");
+  //     setSubmitting(false);
+  //     return;
+  //   }
+
+  //   setForm({ name: "",  date_of_birth: "", school: "",position_1: POSITIONS[0], position_2: POSITIONS[1], position_3: POSITIONS[2] });
+  //   setSubmitting(false);
+  //   loadChildren();
+  // }
+
   async function handleAddChild(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setSubmitting(true);
+  console.log("handleAddChild called");
 
-    const res = await fetch("/api/children", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
+  e.preventDefault();
 
-    if (!res.ok) {
-      setError(data.error || "Couldn't add child. Try again.");
-      setSubmitting(false);
-      return;
-    }
+  console.log("FORM DATA:", form);
 
-    setForm({ name: "", position_1: POSITIONS[0], position_2: POSITIONS[1], position_3: POSITIONS[2] });
+  setError("");
+  setSubmitting(true);
+
+  const res = await fetch("/api/children", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(form),
+  });
+
+  console.log("RESPONSE STATUS:", res.status);
+
+  const data = await res.json();
+
+  console.log("API RESPONSE:", data);
+
+  if (!res.ok) {
+    setError(data.error || "Couldn't add child. Try again.");
     setSubmitting(false);
-    loadChildren();
+    return;
   }
+
+  setForm({
+    name: "",
+    date_of_birth: "",
+    school: "",
+    position_1: POSITIONS[0],
+    position_2: POSITIONS[1],
+    position_3: POSITIONS[2]
+  });
+
+  setSubmitting(false);
+  loadChildren();
+}
 
   return (
     <div className="page">
@@ -95,6 +143,13 @@ export default function DashboardPage() {
             {children.map((child) => (
               <div key={child.id} style={{ marginBottom: "1rem" }}>
                 <strong>{child.name}</strong>
+                {child.date_of_birth && (
+                  <div>Date of Birth: {child.date_of_birth}</div>
+                )}
+
+                {child.school && (
+                  <div>School: {child.school}</div>
+                )}
                 <div style={{ marginTop: "0.4rem" }}>
                   <span className="jersey-tag">{child.position_1}</span>
                   <span className="jersey-tag">{child.position_2}</span>
@@ -107,14 +162,57 @@ export default function DashboardPage() {
 
         <h2 className="display" style={{ fontSize: "1.3rem", margin: "2rem 0 1rem" }}>Add a child</h2>
 
-        <form className="card" onSubmit={handleAddChild}>
+          <form 
+          className="card" 
+          onSubmit={(e) => {
+          alert("SUBMIT FIRED");
+          console.log("FORM SUBMIT FIRED");
+          handleAddChild(e);
+          }}
+          >
           <div className="field">
             <label htmlFor="child_name">Child&apos;s name</label>
             <input
               id="child_name"
               required
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  name: e.target.value,
+                }))
+              }
+            />
+          </div>
+
+
+          <div className="field">
+            <label htmlFor="date_of_birth">Date of Birth</label>
+            <input
+              id="date_of_birth"
+              type="date"
+              value={form.date_of_birth}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  date_of_birth: e.target.value,
+                }))
+              }
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="school">School</label>
+            <input
+              id="school"
+              type="text"
+              value={form.school}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  school: e.target.value,
+                }))
+              }
             />
           </div>
 
