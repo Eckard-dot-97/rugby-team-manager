@@ -783,11 +783,16 @@ export default function CoachDashboard() {
                       <td>
                         <select
                           value={slot.child_id ?? ""}
-                          onChange={(e) => handleSlotChildChange(slot.jersey_number, e.target.value)}
-                        >
-                          <option value="">— empty —</option>
-                          {availableChildren.map((c) => (
-                            <option key={c.child_id} value={c.child_id}>{c.name}</option>
+                            onChange={(e) => handleSlotChildChange(slot.jersey_number, e.target.value)}
+                          >
+                           <option value="">— empty —</option>
+
+                          {availableChildren
+                            .filter((c) => c.positions.includes(slot.position))
+                            .map((c) => (
+                           <option key={c.child_id} value={c.child_id}>
+                            {c.name}
+                          </option>
                           ))}
                         </select>
                       </td>
