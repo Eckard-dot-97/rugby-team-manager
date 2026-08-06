@@ -18,6 +18,8 @@ CREATE TABLE children (
   id INT AUTO_INCREMENT PRIMARY KEY,
   parent_id INT NOT NULL,
   name VARCHAR(100) NOT NULL,
+  date_of_birth DATE NULL,
+  school VARCHAR(150) NULL,
   position_1 VARCHAR(50) NOT NULL,
   position_2 VARCHAR(50) NOT NULL,
   position_3 VARCHAR(50) NOT NULL,
