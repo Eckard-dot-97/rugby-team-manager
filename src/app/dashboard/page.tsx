@@ -55,70 +55,49 @@ export default function DashboardPage() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  // async function handleAddChild(e: React.FormEvent) {
-  //   console.log("handleAddChild called");
-  //   e.preventDefault();
-  //   setError("");
-  //   setSubmitting(true);
-
-  //   const res = await fetch("/api/children", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify(form),
-  //   });
-  //   const data = await res.json();
-
-  //   if (!res.ok) {
-  //     setError(data.error || "Couldn't add child. Try again.");
-  //     setSubmitting(false);
-  //     return;
-  //   }
-
-  //   setForm({ name: "",  date_of_birth: "", school: "",position_1: POSITIONS[0], position_2: POSITIONS[1], position_3: POSITIONS[2] });
-  //   setSubmitting(false);
-  //   loadChildren();
-  // }
-
   async function handleAddChild(e: React.FormEvent) {
-  console.log("handleAddChild called");
+    e.preventDefault();
+    setError("");
 
-  e.preventDefault();
+    // Warn (but don't block) if a child with this name already exists for
+    // this parent — siblings can share a first name, so this is a
+    // confirmation, not a hard stop.
+    const isDuplicate = children.some(
+      (child) => child.name.trim().toLowerCase() === form.name.trim().toLowerCase()
+    );
+    if (isDuplicate) {
+      const proceed = window.confirm(
+        `You already have a child named "${form.name}". Add another anyway?`
+      );
+      if (!proceed) return;
+    }
 
-  console.log("FORM DATA:", form);
+    setSubmitting(true);
 
-  setError("");
-  setSubmitting(true);
+    const res = await fetch("/api/children", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const data = await res.json();
 
-  const res = await fetch("/api/children", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(form),
-  });
+    if (!res.ok) {
+      setError(data.error || "Couldn't add child. Try again.");
+      setSubmitting(false);
+      return;
+    }
 
-  console.log("RESPONSE STATUS:", res.status);
-
-  const data = await res.json();
-
-  console.log("API RESPONSE:", data);
-
-  if (!res.ok) {
-    setError(data.error || "Couldn't add child. Try again.");
+    setForm({
+      name: "",
+      date_of_birth: "",
+      school: "",
+      position_1: POSITIONS[0],
+      position_2: POSITIONS[1],
+      position_3: POSITIONS[2],
+    });
     setSubmitting(false);
-    return;
+    loadChildren();
   }
-
-  setForm({
-    name: "",
-    date_of_birth: "",
-    school: "",
-    position_1: POSITIONS[0],
-    position_2: POSITIONS[1],
-    position_3: POSITIONS[2]
-  });
-
-  setSubmitting(false);
-  loadChildren();
-}
 
   return (
     <div className="page">
@@ -143,13 +122,8 @@ export default function DashboardPage() {
             {children.map((child) => (
               <div key={child.id} style={{ marginBottom: "1rem" }}>
                 <strong>{child.name}</strong>
-                {child.date_of_birth && (
-                  <div>Date of Birth: {child.date_of_birth}</div>
-                )}
-
-                {child.school && (
-                  <div>School: {child.school}</div>
-                )}
+                {child.date_of_birth && <div>Date of Birth: {child.date_of_birth}</div>}
+                {child.school && <div>School: {child.school}</div>}
                 <div style={{ marginTop: "0.4rem" }}>
                   <span className="jersey-tag">{child.position_1}</span>
                   <span className="jersey-tag">{child.position_2}</span>
@@ -162,29 +136,16 @@ export default function DashboardPage() {
 
         <h2 className="display" style={{ fontSize: "1.3rem", margin: "2rem 0 1rem" }}>Add a child</h2>
 
-          <form 
-          className="card" 
-          onSubmit={(e) => {
-          alert("SUBMIT FIRED");
-          console.log("FORM SUBMIT FIRED");
-          handleAddChild(e);
-          }}
-          >
+        <form className="card" onSubmit={handleAddChild}>
           <div className="field">
             <label htmlFor="child_name">Child&apos;s name</label>
             <input
               id="child_name"
               required
               value={form.name}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  name: e.target.value,
-                }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
           </div>
-
 
           <div className="field">
             <label htmlFor="date_of_birth">Date of Birth</label>
@@ -192,12 +153,7 @@ export default function DashboardPage() {
               id="date_of_birth"
               type="date"
               value={form.date_of_birth}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  date_of_birth: e.target.value,
-                }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, date_of_birth: e.target.value }))}
             />
           </div>
 
@@ -207,12 +163,7 @@ export default function DashboardPage() {
               id="school"
               type="text"
               value={form.school}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  school: e.target.value,
-                }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, school: e.target.value }))}
             />
           </div>
 

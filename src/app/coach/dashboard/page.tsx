@@ -786,18 +786,22 @@ export default function CoachDashboard() {
                           value={slot.child_id ?? ""}
                             onChange={(e) => handleSlotChildChange(slot.jersey_number, e.target.value)}
                           >
-                           <option value="">— empty —</option>
-
-                          {availableChildren
-                            .filter((c) => c.positions.includes(slot.position))
-                            .map((c) => (
-                              <option key={c.child_id} value={c.child_id}>
-                              {c.name}
-                              {c.already_played_positions?.includes(slot.position)
-                                ? " (played this position already)"
-                                : ""}
-                            </option>
-                          ))}
+                             <option value="">— empty —</option>
+                            {availableChildren
+                              .filter((c) => c.positions.includes(slot.position))
+                              .map((c) => {
+                                const alreadyPlayed = c.already_played_positions?.includes(slot.position);
+                                return (
+                                  <option
+                                    key={c.child_id}
+                                    value={c.child_id}
+                                    style={alreadyPlayed ? { color: "#999" } : undefined}
+                                  >
+                                    {c.name}
+                                    {alreadyPlayed ? " (played this position already)" : ""}
+                                  </option>
+                                );
+                              })}
                         </select>
                       </td>
                     </tr>
