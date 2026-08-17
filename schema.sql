@@ -9,6 +9,7 @@ CREATE TABLE users (
   surname VARCHAR(100) NOT NULL,
   cell_number VARCHAR(30) NOT NULL,
   role ENUM('parent', 'coach') NOT NULL DEFAULT 'parent',
+  is_coach BOOLEAN NOT NULL DEFAULT FALSE,
   reset_token_hash VARCHAR(64) NULL,
   reset_token_expires DATETIME NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -18,6 +19,8 @@ CREATE TABLE children (
   id INT AUTO_INCREMENT PRIMARY KEY,
   parent_id INT NOT NULL,
   name VARCHAR(100) NOT NULL,
+  date_of_birth DATE NULL,
+  school VARCHAR(150) NULL,
   position_1 VARCHAR(50) NOT NULL,
   position_2 VARCHAR(50) NOT NULL,
   position_3 VARCHAR(50) NOT NULL,

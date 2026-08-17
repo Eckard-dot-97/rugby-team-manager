@@ -94,6 +94,7 @@ type AvailableChild = {
   child_id: number;
   name: string;
   positions: string[];
+  already_played_positions: string[];
 };
 
 type SquadPositionGroup = {
@@ -783,12 +784,24 @@ export default function CoachDashboard() {
                       <td>
                         <select
                           value={slot.child_id ?? ""}
-                          onChange={(e) => handleSlotChildChange(slot.jersey_number, e.target.value)}
-                        >
-                          <option value="">— empty —</option>
-                          {availableChildren.map((c) => (
-                            <option key={c.child_id} value={c.child_id}>{c.name}</option>
-                          ))}
+                            onChange={(e) => handleSlotChildChange(slot.jersey_number, e.target.value)}
+                          >
+                             <option value="">— empty —</option>
+                            {availableChildren
+                              .filter((c) => c.positions.includes(slot.position))
+                              .map((c) => {
+                                const alreadyPlayed = c.already_played_positions?.includes(slot.position);
+                                return (
+                                  <option
+                                    key={c.child_id}
+                                    value={c.child_id}
+                                    style={alreadyPlayed ? { color: "#999" } : undefined}
+                                  >
+                                    {c.name}
+                                    {alreadyPlayed ? " (played this position already)" : ""}
+                                  </option>
+                                );
+                              })}
                         </select>
                       </td>
                     </tr>
