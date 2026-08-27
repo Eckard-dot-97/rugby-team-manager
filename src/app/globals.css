@@ -19,7 +19,10 @@ body {
 
 body {
   margin: 0;
-  background: var(--pitch);
+  background: linear-gradient(180deg, var(--pitch) 0%, var(--pitch-dark) 100%) fixed;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(247, 247, 242, 0.025) 0, rgba(247, 247, 242, 0.025) 2px, transparent 2px, transparent 140px),
+    linear-gradient(180deg, var(--pitch) 0%, var(--pitch-dark) 100%);
   color: var(--chalk);
   font-family: var(--font-body), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -88,11 +91,65 @@ a:focus-visible {
   color: var(--gold);
 }
 
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand-mark-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.brand-mark-subtitle {
+  color: var(--chalk);
+  opacity: 0.6;
+  font-size: 0.75em;
+  letter-spacing: 0.04em;
+}
+
 .card {
   background: var(--pitch-dark);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 1.75rem;
+}
+
+/* Gold accent stripe down the left edge — used on primary cards to match
+   the design mockups (login, signup, dashboard, household, coach). */
+.card-accent {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-accent::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, #e8bd6e 0%, #c68f34 100%);
+}
+
+.card-shadow {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--chalk);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-display), system-ui, sans-serif;
 }
 
 .card + .card {
@@ -174,6 +231,20 @@ a:focus-visible {
   margin-right: 0.4rem;
 }
 
+/* Wrap wide tables in this on mobile so they scroll horizontally instead
+   of squashing or breaking the page layout. */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
 table.roster {
   width: 100%;
   border-collapse: collapse;
@@ -202,4 +273,72 @@ table.roster td {
 
 .chip-no {
   color: rgba(247, 247, 242, 0.4);
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive — desktop is the default above; this narrows things down */
+/* for tablet and phone widths so every page (login, signup, dashboard, */
+/* household, coach) flexes cleanly instead of overflowing.             */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 720px) {
+  .page {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .topbar > div {
+    flex-wrap: wrap;
+    gap: 0.75rem !important;
+    width: 100%;
+  }
+
+  .brand {
+    font-size: 1.25rem;
+  }
+
+  .brand-mark-subtitle {
+    display: block;
+    margin-left: 0;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  table.roster {
+    font-size: 0.8rem;
+    min-width: 640px;
+  }
+
+  .avatar {
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1.display {
+    font-size: 1.35rem !important;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .btn,
+  .btn-ghost {
+    font-size: 0.9rem;
+  }
 }
