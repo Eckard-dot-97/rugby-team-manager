@@ -13,10 +13,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "child_id and fixture_id are required." }, { status: 400 });
   }
 
-  // Confirm this child actually belongs to the logged-in parent.
+  // Confirm this child belongs to the logged-in parent, either directly
+  // (parent_id) or through shared household membership (mom/dad/step-parent
+  // all managing the same child).
   const [ownedRows] = await pool.query(
-    "SELECT id FROM children WHERE id = ? AND parent_id = ?",
-    [child_id, user.id]
+    `SELECT c.id FROM children c
+     LEFT JOIN household_members hm ON hm.household_id = c.household_id AND hm.user_id = ?
+     WHERE c.id = ? AND (hm.user_id IS NOT NULL OR c.parent_id = ?)`,
+    [user.id, child_id, user.id]
   );
   if ((ownedRows as any[]).length === 0) {
     return NextResponse.json({ error: "Child not found for this account." }, { status: 403 });
@@ -47,11 +51,12 @@ export async function GET(req: NextRequest) {
   }
 
   const [rows] = await pool.query(
-    `SELECT c.id AS child_id, c.name, a.friday_training, a.game_1, a.game_2, a.game_3
+    `SELECT DISTINCT c.id AS child_id, c.name, a.friday_training, a.game_1, a.game_2, a.game_3
      FROM children c
+     LEFT JOIN household_members hm ON hm.household_id = c.household_id AND hm.user_id = ?
      LEFT JOIN availability a ON a.child_id = c.id AND a.fixture_id = ?
-     WHERE c.parent_id = ?`,
-    [fixtureId, user.id]
+     WHERE hm.user_id IS NOT NULL OR c.parent_id = ?`,
+    [user.id, fixtureId, user.id]
   );
 
   return NextResponse.json({ availability: rows });

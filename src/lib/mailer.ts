@@ -22,3 +22,22 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
     `,
   });
 }
+
+export async function sendHouseholdInviteEmail(
+  to: string,
+  inviterName: string,
+  householdLabel: string,
+  acceptUrl: string
+) {
+  await transporter.sendMail({
+    from: `"Team Sheet" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: `${inviterName} invited you to join ${householdLabel} on Team Sheet`,
+    html: `
+      <p>${inviterName} has invited you to join <strong>${householdLabel}</strong> on Team Sheet, so you can help manage the children's schedules together.</p>
+      <p><a href="${acceptUrl}">Click here to accept the invite</a> — this link expires in 7 days.</p>
+      <p>If you don't already have an account, you'll be able to create one as part of accepting.</p>
+      <p>If you weren't expecting this, you can safely ignore this email.</p>
+    `,
+  });
+}
