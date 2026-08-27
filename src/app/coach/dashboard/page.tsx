@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import LogoutButton from "@/components/LogoutButton";
+import BrandMark from "@/components/BrandMark";
 
 type RosterRow = {
   child_id: number;
@@ -449,12 +450,12 @@ export default function CoachDashboard() {
   return (
     <div className="page">
       <div className="topbar">
-        <span className="brand display">Team Sheet — Coach</span>
+        <BrandMark subtitle="Coach" />
         <LogoutButton />
       </div>
 
       <div className="container-wide">
-        <div className="card" style={{ marginBottom: "1.5rem" }}>
+        <div className="card card-accent card-shadow" style={{ marginBottom: "1.5rem" }}>
           <button
             className="btn btn-ghost"
             style={{ width: "auto", padding: "0.5rem 1rem" }}

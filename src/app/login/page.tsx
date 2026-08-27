@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import BrandMark from "@/components/BrandMark";
 
 function LoginForm() {
   const router = useRouter();
@@ -47,7 +48,7 @@ function LoginForm() {
 
   return (
     <>
-      <form className="card" onSubmit={handleSubmit}>
+      <form className="card card-accent card-shadow" onSubmit={handleSubmit}>
         <div className="field">
           <label htmlFor="email">Email</label>
           <input
@@ -100,9 +101,14 @@ export default function LoginPage() {
   return (
     <div className="page">
       <div className="container">
-        <h1 className="display" style={{ fontSize: "2rem", color: "var(--gold)", marginBottom: "1.5rem" }}>
-          Parent login
-        </h1>
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div style={{ marginBottom: "0.75rem" }}>
+            <BrandMark size={44} />
+          </div>
+          <h1 className="display" style={{ fontSize: "1.7rem" }}>
+            Parent login
+          </h1>
+        </div>
         <Suspense fallback={<p className="muted">Loading...</p>}>
           <LoginForm />
         </Suspense>

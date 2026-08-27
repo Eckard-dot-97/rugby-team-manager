@@ -4,6 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { POSITIONS, type Position } from "@/lib/positions";
 import LogoutButton from "@/components/LogoutButton";
+import BrandMark from "@/components/BrandMark";
+
+function initialsOf(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "?";
+}
 
 type Child = {
   id: number;
@@ -43,6 +53,9 @@ export default function DashboardPage() {
   // that case the API asks us to say which one the new child goes in.
   const [householdChoices, setHouseholdChoices] = useState<{ id: number; name: string | null }[]>([]);
   const [chosenHouseholdId, setChosenHouseholdId] = useState<number | "">("");
+
+  const [busyChildId, setBusyChildId] = useState<number | null>(null);
+  const [mergeTarget, setMergeTarget] = useState<{ [childId: number]: number | "" }>({});
 
   async function loadChildren() {
     setLoading(true);
@@ -119,10 +132,61 @@ export default function DashboardPage() {
     loadChildren();
   }
 
+  async function handleDeleteChild(child: Child) {
+    if (!window.confirm(`Delete "${child.name}"? This removes their availability and stats history too.`)) {
+      return;
+    }
+    setError("");
+    setBusyChildId(child.id);
+    const res = await fetch("/api/children/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ child_id: child.id }),
+    });
+    const data = await res.json();
+    setBusyChildId(null);
+    if (!res.ok) {
+      setError(data.error || "Couldn't delete that child.");
+      return;
+    }
+    loadChildren();
+  }
+
+  async function handleMergeChild(child: Child) {
+    const targetId = mergeTarget[child.id];
+    if (!targetId) return;
+    const target = children.find((c) => c.id === targetId);
+    if (!target) return;
+
+    if (
+      !window.confirm(
+        `Merge "${child.name}" into "${target.name}"? "${child.name}" will be removed and their availability/stats history moved onto "${target.name}". This can't be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setError("");
+    setBusyChildId(child.id);
+    const res = await fetch("/api/children/merge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keep_id: targetId, remove_id: child.id }),
+    });
+    const data = await res.json();
+    setBusyChildId(null);
+    if (!res.ok) {
+      setError(data.error || "Couldn't merge those children.");
+      return;
+    }
+    setMergeTarget((f) => ({ ...f, [child.id]: "" }));
+    loadChildren();
+  }
+
   return (
     <div className="page">
       <div className="topbar">
-        <span className="brand display">Team Sheet</span>
+        <BrandMark />
         <div style={{ display: "flex", gap: "1rem" }}>
           <Link href="/household" className="muted">Household</Link>
           <Link href="/stats" className="muted">Stats</Link>
@@ -139,9 +203,13 @@ export default function DashboardPage() {
         ) : children.length === 0 ? (
           <p className="muted">No children added yet — add one below.</p>
         ) : (
-          <div className="card">
+          <div className="card card-accent card-shadow">
             {children.map((child) => (
-              <div key={child.id} style={{ marginBottom: "1rem" }}>
+              <div key={child.id} style={{ marginBottom: "1rem", display: "flex", gap: "0.8rem" }}>
+                <span className="avatar" aria-hidden="true" style={{ marginTop: "0.15rem" }}>
+                  {initialsOf(child.name)}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
                 <strong>{child.name}</strong>
                 {child.date_of_birth && <div>Date of Birth: {child.date_of_birth}</div>}
                 {child.school && <div>School: {child.school}</div>}
@@ -155,6 +223,55 @@ export default function DashboardPage() {
                     Managed by: {child.co_parents.map((p) => `${p.name} ${p.surname}`).join(", ")}
                   </div>
                 )}
+
+                <div style={{ marginTop: "0.6rem", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ width: "auto", padding: "0.3rem 0.7rem", fontSize: "0.8rem" }}
+                    disabled={busyChildId === child.id}
+                    onClick={() => handleDeleteChild(child)}
+                  >
+                    Delete
+                  </button>
+
+                  {children.length > 1 && (
+                    <>
+                      <select
+                        aria-label={`Merge ${child.name} into...`}
+                        value={mergeTarget[child.id] || ""}
+                        onChange={(e) =>
+                          setMergeTarget((f) => ({ ...f, [child.id]: Number(e.target.value) || "" }))
+                        }
+                        style={{
+                          padding: "0.3rem 0.5rem",
+                          fontSize: "0.8rem",
+                          background: "var(--pitch)",
+                          border: "1px solid var(--line)",
+                          borderRadius: "6px",
+                          color: "var(--chalk)",
+                        }}
+                      >
+                        <option value="">Merge into duplicate...</option>
+                        {children
+                          .filter((c) => c.id !== child.id)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn-ghost"
+                        style={{ width: "auto", padding: "0.3rem 0.7rem", fontSize: "0.8rem" }}
+                        disabled={busyChildId === child.id || !mergeTarget[child.id]}
+                        onClick={() => handleMergeChild(child)}
+                      >
+                        Merge
+                      </button>
+                    </>
+                  )}
+                </div>
+                </div>
               </div>
             ))}
           </div>
@@ -167,7 +284,7 @@ export default function DashboardPage() {
 
         <h2 className="display" style={{ fontSize: "1.3rem", margin: "2rem 0 1rem" }}>Add a child</h2>
 
-        <form className="card" onSubmit={handleAddChild}>
+        <form className="card card-accent card-shadow" onSubmit={handleAddChild}>
           <div className="field">
             <label htmlFor="child_name">Child&apos;s name</label>
             <input

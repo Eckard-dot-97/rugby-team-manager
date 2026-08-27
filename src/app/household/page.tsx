@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
+import BrandMark from "@/components/BrandMark";
+
+function initialsOf(name: string, surname: string) {
+  return `${name[0] || ""}${surname[0] || ""}`.toUpperCase() || "?";
+}
 
 type Member = { id: number; name: string; surname: string; email: string };
 type Child = { id: number; name: string };
@@ -91,7 +96,7 @@ export default function HouseholdPage() {
   return (
     <div className="page">
       <div className="topbar">
-        <span className="brand display">Team Sheet</span>
+        <BrandMark />
         <div style={{ display: "flex", gap: "1rem" }}>
           <Link href="/dashboard" className="muted">&larr; Dashboard</Link>
           <LogoutButton />
@@ -116,7 +121,7 @@ export default function HouseholdPage() {
           </p>
         ) : (
           households.map((h) => (
-            <div key={h.id} className="card" style={{ marginBottom: "1.5rem" }}>
+            <div key={h.id} className="card card-accent card-shadow" style={{ marginBottom: "1.5rem" }}>
               <h2 className="display" style={{ fontSize: "1.15rem", marginBottom: "1rem" }}>
                 {h.name}
               </h2>
@@ -148,8 +153,11 @@ export default function HouseholdPage() {
                         borderBottom: "1px solid var(--line)",
                       }}
                     >
-                      <span>
-                        {m.name} {m.surname} <span className="muted">({m.email})</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.6rem", minWidth: 0 }}>
+                        <span className="avatar" aria-hidden="true">{initialsOf(m.name, m.surname)}</span>
+                        <span>
+                          {m.name} {m.surname} <span className="muted">({m.email})</span>
+                        </span>
                       </span>
                       {h.members.length > 1 && (
                         <button
