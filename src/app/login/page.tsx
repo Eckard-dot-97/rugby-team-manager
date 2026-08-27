@@ -1,15 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/dashboard";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const prefill = searchParams.get("email");
+    if (prefill) setEmail(prefill);
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +38,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(redirect);
     } catch {
       setError("Couldn't reach the server. Check your connection and try again.");
       setLoading(false);
@@ -38,51 +46,66 @@ export default function LoginPage() {
   }
 
   return (
+    <>
+      <form className="card" onSubmit={handleSubmit}>
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <button className="btn" type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Log in"}
+        </button>
+
+        {error && <p className="error-text">{error}</p>}
+      </form>
+
+      <p className="muted" style={{ textAlign: "center", marginTop: "1.25rem" }}>
+        <Link href="/forgot-password" style={{ color: "var(--gold)" }}>Forgot password?</Link>
+      </p>
+      <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>
+        Need an account?{" "}
+        <Link
+          href={redirect !== "/dashboard" ? `/signup?redirect=${encodeURIComponent(redirect)}` : "/signup"}
+          style={{ color: "var(--gold)" }}
+        >
+          Sign up
+        </Link>
+      </p>
+      <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>
+        Coaching staff? <Link href="/coach/login" style={{ color: "var(--gold)" }}>Coach login</Link>
+      </p>
+    </>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="page">
       <div className="container">
         <h1 className="display" style={{ fontSize: "2rem", color: "var(--gold)", marginBottom: "1.5rem" }}>
           Parent login
         </h1>
-
-        <form className="card" onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Log in"}
-          </button>
-
-          {error && <p className="error-text">{error}</p>}
-        </form>
-
-        <p className="muted" style={{ textAlign: "center", marginTop: "1.25rem" }}>
-          <Link href="/forgot-password" style={{ color: "var(--gold)" }}>Forgot password?</Link>
-        </p>
-        <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>
-          Need an account? <Link href="/signup" style={{ color: "var(--gold)" }}>Sign up</Link>
-        </p>
-        <p className="muted" style={{ textAlign: "center", marginTop: "0.5rem" }}>
-          Coaching staff? <Link href="/coach/login" style={{ color: "var(--gold)" }}>Coach login</Link>
-        </p>
+        <Suspense fallback={<p className="muted">Loading...</p>}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

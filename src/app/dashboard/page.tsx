@@ -13,6 +13,8 @@ type Child = {
   position_1: string;
   position_2: string;
   position_3: string;
+  household_id: number | null;
+  co_parents: { id: number; name: string; surname: string }[];
 };
 
 export default function DashboardPage() {
@@ -36,6 +38,11 @@ export default function DashboardPage() {
     position_2: POSITIONS[1],
     position_3: POSITIONS[2],
   });
+
+  // Only populated if the parent belongs to more than one household — in
+  // that case the API asks us to say which one the new child goes in.
+  const [householdChoices, setHouseholdChoices] = useState<{ id: number; name: string | null }[]>([]);
+  const [chosenHouseholdId, setChosenHouseholdId] = useState<number | "">("");
 
   async function loadChildren() {
     setLoading(true);
@@ -77,11 +84,22 @@ export default function DashboardPage() {
     const res = await fetch("/api/children", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        household_id: chosenHouseholdId || undefined,
+      }),
     });
     const data = await res.json();
 
     if (!res.ok) {
+      // Belongs to more than one household — show a picker and let them
+      // resubmit once they've chosen.
+      if (res.status === 409 && data.households) {
+        setHouseholdChoices(data.households);
+        setError(data.error || "Choose which household this child belongs to, then submit again.");
+        setSubmitting(false);
+        return;
+      }
       setError(data.error || "Couldn't add child. Try again.");
       setSubmitting(false);
       return;
@@ -95,6 +113,8 @@ export default function DashboardPage() {
       position_2: POSITIONS[1],
       position_3: POSITIONS[2],
     });
+    setHouseholdChoices([]);
+    setChosenHouseholdId("");
     setSubmitting(false);
     loadChildren();
   }
@@ -104,6 +124,7 @@ export default function DashboardPage() {
       <div className="topbar">
         <span className="brand display">Team Sheet</span>
         <div style={{ display: "flex", gap: "1rem" }}>
+          <Link href="/household" className="muted">Household</Link>
           <Link href="/stats" className="muted">Stats</Link>
           <Link href="/availability" className="muted">Set availability &rarr;</Link>
           <LogoutButton />
@@ -129,10 +150,20 @@ export default function DashboardPage() {
                   <span className="jersey-tag">{child.position_2}</span>
                   <span className="jersey-tag">{child.position_3}</span>
                 </div>
+                {child.co_parents.length > 1 && (
+                  <div className="muted" style={{ marginTop: "0.4rem", fontSize: "0.85rem" }}>
+                    Managed by: {child.co_parents.map((p) => `${p.name} ${p.surname}`).join(", ")}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
+
+        <p className="muted" style={{ marginBottom: "1.5rem" }}>
+          Want another parent (mom, dad, step-parent) to help manage a child&apos;s schedule too?{" "}
+          <Link href="/household" style={{ color: "var(--gold)" }}>Invite them via Household &rarr;</Link>
+        </p>
 
         <h2 className="display" style={{ fontSize: "1.3rem", margin: "2rem 0 1rem" }}>Add a child</h2>
 
@@ -205,6 +236,23 @@ export default function DashboardPage() {
               ))}
             </select>
           </div>
+
+          {householdChoices.length > 0 && (
+            <div className="field">
+              <label htmlFor="household_id">Which household is this child part of?</label>
+              <select
+                id="household_id"
+                required
+                value={chosenHouseholdId}
+                onChange={(e) => setChosenHouseholdId(Number(e.target.value))}
+              >
+                <option value="" disabled>Choose a household</option>
+                {householdChoices.map((h) => (
+                  <option key={h.id} value={h.id}>{h.name || `Household #${h.id}`}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button className="btn" type="submit" disabled={submitting}>
             {submitting ? "Adding..." : "Add child"}
